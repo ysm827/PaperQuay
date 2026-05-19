@@ -149,11 +149,15 @@ function App() {
         </aside>
 
         <main className="min-w-0 flex-1 overflow-hidden">
-          {activeWorkspace === 'library' ? (
-            <Reader />
-          ) : (
-            <AgentWorkspace onOpenPreferences={handleOpenPreferencesFromAgent} />
-          )}
+          <div className="h-full min-h-0 overflow-hidden" hidden={activeWorkspace !== 'library'}>
+            <Reader workspaceActive={activeWorkspace === 'library'} />
+          </div>
+
+          {activeWorkspace === 'agent' ? (
+            <div className="h-full min-h-0 overflow-hidden">
+              <AgentWorkspace onOpenPreferences={handleOpenPreferencesFromAgent} />
+            </div>
+          ) : null}
         </main>
       </div>
     </AppLocaleProvider>

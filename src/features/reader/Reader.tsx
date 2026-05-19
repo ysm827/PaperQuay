@@ -60,7 +60,11 @@ import {
   type SummaryCacheEnvelope,
 } from './readerShared';
 
-function Reader() {
+interface ReaderProps {
+  workspaceActive?: boolean;
+}
+
+function Reader({ workspaceActive = true }: ReaderProps) {
   const appWindow = getCurrentWindow();
   const tabs = useTabsStore((state) => state.tabs);
   const activeTabId = useTabsStore((state) => state.activeTabId);
@@ -245,7 +249,7 @@ function Reader() {
     syncLibraryParsedState,
     updateLibraryPreviewOperation,
   } = useReaderLibraryPreview({
-    activeTabId,
+    activeTabId: workspaceActive ? activeTabId : null,
     allKnownItems,
     createPaperTaskState,
     l,
@@ -791,6 +795,10 @@ function Reader() {
   }, [configHydrated, syncNativeLibraryZoteroDir, zoteroLocalDataDir]);
 
   useEffect(() => {
+    if (!workspaceActive) {
+      return undefined;
+    }
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && preferencesOpen) {
         setPreferencesOpen(false);
@@ -800,7 +808,7 @@ function Reader() {
     window.addEventListener('keydown', handleKeyDown);
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [preferencesOpen]);
+  }, [preferencesOpen, workspaceActive]);
 
   return (
     <AppLocaleProvider value={settings.uiLanguage}>
@@ -835,7 +843,10 @@ function Reader() {
           </div>
 
           <main className="relative min-h-0 flex-1 overflow-hidden">
-            <div className="h-full min-h-0 overflow-hidden" hidden={activeTabId !== HOME_TAB_ID}>
+            <div
+              className="h-full min-h-0 overflow-hidden"
+              hidden={!workspaceActive || activeTabId !== HOME_TAB_ID}
+            >
               <LiteratureLibraryView
                 onOpenPaper={onboardingOpen ? handleOpenOnboardingDemoPaper : handleOpenNativeLibraryPaper}
                 onOpenSettings={handleOpenPreferences}
@@ -861,7 +872,7 @@ function Reader() {
                   <DocumentReaderTab
                     tabId={tab.id}
                     document={item}
-                    isActive={tab.id === activeTabId}
+                    isActive={workspaceActive && tab.id === activeTabId}
                     settings={settings}
                     zoteroLocalDataDir={zoteroLocalDataDir}
                     mineruApiToken={mineruApiToken}
