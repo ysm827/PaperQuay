@@ -191,7 +191,7 @@ jobs:
             release/*.deb
             release/*.tar.gz
             release/*.blockmap
-            release/latest*.yml
+            release/stable*.yml
           if-no-files-found: error
 
       - name: Upload release assets
@@ -212,7 +212,7 @@ jobs:
               /\.deb$/i,
               /\.tar\.gz$/i,
               /\.blockmap$/i,
-              /^latest.*\.yml$/i,
+              /^stable.*\.yml$/i,
             ];
 
             const assets = fs.existsSync(releaseDir)
@@ -242,9 +242,36 @@ jobs:
                   owner,
                   repo,
                   asset_id: existing.id,
+                }).catch((error) => {
+                  if (error.status !== 404) {
+                    throw error;
+                  }
                 });
               }
             }
+
+            async function deleteExistingAssetsByPattern(pattern) {
+              const existingAssets = await github.paginate(github.rest.repos.listReleaseAssets, {
+                owner,
+                repo,
+                release_id: releaseId,
+                per_page: 100,
+              });
+
+              for (const existing of existingAssets.filter((asset) => pattern.test(asset.name))) {
+                await github.rest.repos.deleteReleaseAsset({
+                  owner,
+                  repo,
+                  asset_id: existing.id,
+                }).catch((error) => {
+                  if (error.status !== 404) {
+                    throw error;
+                  }
+                });
+              }
+            }
+
+            await deleteExistingAssetsByPattern(/^latest.*\.ya?ml$/i);
 
             for (const filePath of assets) {
               const name = path.basename(filePath);

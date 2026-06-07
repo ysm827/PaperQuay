@@ -2,6 +2,7 @@ const UPDATE_REPOSITORY = {
   owner: 'WangQrkkk',
   repo: 'PaperQuay',
 };
+const UPDATE_CHANNEL = 'stable';
 const LATEST_RELEASE_API_URL = `https://api.github.com/repos/${UPDATE_REPOSITORY.owner}/${UPDATE_REPOSITORY.repo}/releases/latest`;
 
 function cleanVersion(value) {
@@ -161,9 +162,11 @@ function createUpdateCommands(context) {
     updateAvailableFromUpdater: false,
   };
 
+  autoUpdater.channel = UPDATE_CHANNEL;
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.allowPrerelease = false;
+  autoUpdater.allowDowngrade = false;
   autoUpdater.logger = {
     info: (...args) => console.info('[autoUpdater]', ...args),
     warn: (...args) => console.warn('[autoUpdater]', ...args),

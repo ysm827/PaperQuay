@@ -81,7 +81,8 @@
         "provider": "github",
         "owner": "WangQrkkk",
         "repo": "PaperQuay",
-        "releaseType": "release"
+        "releaseType": "release",
+        "channel": "stable"
       }
     ],
     "npmRebuild": false,
