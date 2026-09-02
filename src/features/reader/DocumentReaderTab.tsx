@@ -3005,7 +3005,6 @@ function DocumentReaderTab({
       return;
     }
 
-    const hadCurrentSession = qaSessions.some((session) => session.id === currentSession.id);
     const previousSession = currentSession;
     const previousSelectedSessionId = selectedQaSessionId;
     const previousAttachments = qaAttachments;
@@ -3119,11 +3118,16 @@ function DocumentReaderTab({
         qaHistoryReadyWorkspaceRef.current === currentDocument.workspaceId;
 
       if (!streamedAnswer.trim() && sessionStillActive) {
-        setQaSessions((current) =>
-          hadCurrentSession
-            ? updateQaSession(current, previousSession)
-            : current.filter((session) => session.id !== currentSession.id),
-        );
+        // 保留用户刚输入的消息，只移除空的 assistant 消息。
+        const sessionWithUserMessage: DocumentChatSession = {
+          ...previousSession,
+          title: buildQaSessionTitle(localeRef.current, nextMessages),
+          createdAt: previousSession.createdAt || nextUserMessage.createdAt,
+          updatedAt: nextUserMessage.createdAt,
+          messages: nextMessages,
+        };
+
+        setQaSessions((current) => updateQaSession(current, sessionWithUserMessage));
         setSelectedQaSessionId((current) =>
           current === currentSession.id ? previousSelectedSessionId : current,
         );

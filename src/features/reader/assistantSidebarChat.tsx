@@ -3,7 +3,9 @@ import {
   ArrowUp,
   Bot,
   Camera,
+  Check,
   Code2,
+  Copy,
   Database,
   ExternalLink,
   FilePlus2,
@@ -749,6 +751,7 @@ export function ChatWorkspacePanel({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [composerWidth, setComposerWidth] = useState(0);
   const [compactActionsOpen, setCompactActionsOpen] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const activePreset =
     qaModelPresets.find((preset) => preset.id === selectedQaPresetId) ?? qaModelPresets[0] ?? null;
   const runningSessionIdSet = useMemo(() => new Set(runningSessionIds), [runningSessionIds]);
@@ -769,6 +772,25 @@ export function ChatWorkspacePanel({
     setHistoryOpen(false);
     window.requestAnimationFrame(() => textareaRef.current?.focus());
   }, [onSessionCreate]);
+  const handleCopyMessage = useCallback(async (messageId: string, content: string) => {
+    if (!content) {
+      return;
+    }
+
+    try {
+      if (window.paperquay?.clipboard?.writeText) {
+        window.paperquay.clipboard.writeText(content);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(content);
+      }
+      setCopiedMessageId(messageId);
+      window.setTimeout(() => {
+        setCopiedMessageId((current) => (current === messageId ? null : current));
+      }, 1600);
+    } catch {
+      // Ignore clipboard errors so a failed copy never interrupts reading.
+    }
+  }, []);
   const suggestionPrompts = [
     l('用三点总结这篇论文的核心贡献。', 'Summarize the core contributions of this paper in three points.'),
     l('这个方法相比基线模型有哪些优势？', 'What advantages does this method have over the baseline models?'),
@@ -1305,21 +1327,36 @@ export function ChatWorkspacePanel({
                           ) : null}
                           <span>{formatChatSessionTime(message.createdAt, locale)}</span>
                           {rawMessageContent ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                onSaveAssistantMessageAsNote?.({
-                                  ...message,
-                                  content: rawMessageContent,
-                                })
-                              }
-                              disabled={!onSaveAssistantMessageAsNote}
-                              className="ml-auto inline-flex h-6 items-center gap-1 rounded-lg px-2 text-[10px] font-medium text-[var(--pq-text-muted)] transition hover:bg-[var(--pq-hover)] hover:text-[var(--pq-text)] disabled:cursor-not-allowed disabled:opacity-50"
-                              title={l('保存为笔记', 'Save as note')}
-                            >
-                              <FilePlus2 className="h-3 w-3" strokeWidth={1.8} />
-                              {l('保存', 'Save')}
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => void handleCopyMessage(message.id, rawMessageContent)}
+                                className="ml-auto inline-flex h-6 items-center gap-1 rounded-lg px-2 text-[10px] font-medium text-[var(--pq-text-muted)] transition hover:bg-[var(--pq-hover)] hover:text-[var(--pq-text)]"
+                                title={l('复制原始内容', 'Copy raw content')}
+                              >
+                                {copiedMessageId === message.id ? (
+                                  <Check className="h-3 w-3" strokeWidth={1.8} />
+                                ) : (
+                                  <Copy className="h-3 w-3" strokeWidth={1.8} />
+                                )}
+                                {copiedMessageId === message.id ? l('已复制', 'Copied') : l('复制', 'Copy')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onSaveAssistantMessageAsNote?.({
+                                    ...message,
+                                    content: rawMessageContent,
+                                  })
+                                }
+                                disabled={!onSaveAssistantMessageAsNote}
+                                className="inline-flex h-6 items-center gap-1 rounded-lg px-2 text-[10px] font-medium text-[var(--pq-text-muted)] transition hover:bg-[var(--pq-hover)] hover:text-[var(--pq-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                                title={l('保存为笔记', 'Save as note')}
+                              >
+                                <FilePlus2 className="h-3 w-3" strokeWidth={1.8} />
+                                {l('保存', 'Save')}
+                              </button>
+                            </>
                           ) : null}
                         </div>
                       </div>
@@ -1355,8 +1392,20 @@ export function ChatWorkspacePanel({
                           </div>
                         ) : null}
 
-                        <span className="mt-1 px-1 text-[11px] text-[var(--pq-text-faint)] opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                          {formatChatSessionTime(message.createdAt, locale)}
+                        <span className="mt-1 flex items-center gap-2 px-1 text-[11px] text-[var(--pq-text-faint)] opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                          <span>{formatChatSessionTime(message.createdAt, locale)}</span>
+                          <button
+                            type="button"
+                            onClick={() => void handleCopyMessage(message.id, rawMessageContent)}
+                            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-[var(--pq-text-muted)] transition hover:bg-[var(--pq-hover)] hover:text-[var(--pq-text)]"
+                            title={l('复制', 'Copy')}
+                          >
+                            {copiedMessageId === message.id ? (
+                              <Check className="h-3 w-3" strokeWidth={1.8} />
+                            ) : (
+                              <Copy className="h-3 w-3" strokeWidth={1.8} />
+                            )}
+                          </button>
                         </span>
                       </div>
                     )}
